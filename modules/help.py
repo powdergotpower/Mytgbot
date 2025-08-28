@@ -4,56 +4,59 @@ from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 # --- HELP TEXTS ---
 
 HOME_TEXT = """
-<b>👋 Hello, welcome to MaxBot!</b>
+🌟 <b>Welcome to MaxBot!</b> 🌟
 
-I'm here to make managing your groups easier.  
-Choose a section below to learn about my features:
+Hey there! I am <b>Max</b>, your smart, friendly, and powerful group management assistant 🤖  
+I help admins run their groups smoothly and keep spam under control!
+
+Choose a section below to explore my amazing features:
+
+🔹 <b>Admin Tools</b> – Manage your group like a pro  
+🔹 <b>AntiFlood</b> – Stop spammers instantly  
+🔹 <b>About</b> – Learn about me
 """
 
 ADMIN_TEXT = """
-<b>🔐 Admin Commands</b>
+🔐 <b>Admin Commands</b>
 
-These tools help admins manage the group effectively:
+Keep your group safe and organized with these tools:
 
-- /promote <reply>: Promote a user to admin
-- /demote <reply>: Demote an admin
-- /pin <reply>: Pin a message
-- /unpin: Unpin the last pinned message
+• <code>/promote &lt;reply&gt;</code> — Promote a member to admin  
+• <code>/demote &lt;reply&gt;</code> — Demote an admin  
+• <code>/pin &lt;reply&gt;</code> — Pin a message  
+• <code>/unpin</code> — Unpin the last pinned message  
+• <code>/adminlist</code> — See all current admins
+
+✨ Tip: Use these commands wisely to keep your group safe!
 """
 
 ANTIFLOOD_TEXT = """
-<b>🚫 AntiFlood System</b>
+🚫 <b>AntiFlood System</b>
 
-You know how sometimes people join, send 100 messages, and ruin your chat?  
-With <b>AntiFlood</b>, that happens no more!  
-This system helps control spammers by muting, banning, or kicking them when they flood messages.
+Tired of spammers flooding your group?  
+MaxBot automatically detects flooders and takes action:
 
-<b>📌 Available Commands:</b>
-- <code>/flood</code> → Show the current antiflood settings.
-- <code>/setflood &lt;number/off/no&gt;</code> → Set the number of consecutive messages to trigger antiflood.  
-   • Example: <code>/setflood 7</code> → Triggers antiflood after 7 messages.  
-   • Example: <code>/setflood off</code> → Disable antiflood.
+• <code>/flood</code> — Show current flood settings  
+• <code>/setflood &lt;number/off&gt;</code> — Set messages needed to trigger antiflood  
+• <code>/setfloodtimer &lt;count&gt; &lt;duration&gt;</code> — Timed antiflood (messages in X seconds)  
+• <code>/floodmode &lt;action&gt;</code> — Action for flooders: ban / mute / kick / tban / tmute  
+• <code>/clearflood &lt;yes/no&gt;</code> — Delete flood messages automatically
 
-- <code>/setfloodtimer &lt;count&gt; &lt;duration&gt;</code> → Timed antiflood. Triggers if a user sends X messages in Y seconds.  
-   • Example: <code>/setfloodtimer 10 30s</code> → Triggers after 10 messages in 30 seconds.  
-   • Example: <code>/setfloodtimer off</code> → Disable timed antiflood.
+💡 Example:  
+• <code>/setflood 7</code> → Triggers antiflood after 7 messages  
+• <code>/setfloodtimer 10 30s</code> → 10 messages in 30 seconds triggers antiflood
 
-- <code>/floodmode &lt;action&gt;</code> → Choose action for flooders: ban / mute / kick / tban / tmute.  
-   • Example: <code>/floodmode mute</code> → Mutes spammers.  
-   • Example: <code>/floodmode tban 3d</code> → Temporary ban for 3 days.
-
-- <code>/clearflood &lt;yes/no&gt;</code> → Delete the spam messages that triggered antiflood.  
-   • Example: <code>/clearflood yes</code> → Auto delete flood messages.
-
-<b>✨ Tip:</b> With antiflood, your group will stay spam-free and peaceful.
+Keep your group peaceful and spam-free with just a few commands!
 """
 
 ABOUT_TEXT = """
-<b>ℹ️ About MaxBot</b>
+ℹ️ <b>About MaxBot</b>
 
 👤 Developer: <a href="tg://user?id=123456789">Max</a>  
-💡 Built with love to help manage your groups.  
-Feel free to try all the commands and explore the features!
+💖 Built with love in India to help manage groups  
+🚀 Smart, fast, and reliable — made for every admin!  
+
+Feel free to explore all commands and customize your group the way you like.
 """
 
 # --- KEYBOARDS ---

@@ -1,106 +1,126 @@
-from telegram import Update
-from telegram.ext import MessageHandler, Filters, CommandHandler, CallbackContext, run_async
-import json
+# modules/filters_module.py
 import os
+import json
+from telegram import Update
+from telegram.ext import CommandHandler, MessageHandler, ContextTypes, filters
 
-FILTER_FILE = "data/filters.json"
+# File to store filters
+DATA_DIR = "data"
+FILTER_FILE = os.path.join(DATA_DIR, "filters.json")
 
-# Load existing filters
+# Ensure data directory exists
+os.makedirs(DATA_DIR, exist_ok=True)
+
+# Load filters from file
 if os.path.exists(FILTER_FILE):
-    with open(FILTER_FILE, "r") as f:
+    with open(FILTER_FILE, "r", encoding="utf-8") as f:
         FILTERS = json.load(f)
 else:
-    FILTERS = {}
+    FILTERS = {}  # {chat_id: {trigger: reply}}
 
 def save_filters():
-    with open(FILTER_FILE, "w") as f:
+    with open(FILTER_FILE, "w", encoding="utf-8") as f:
         json.dump(FILTERS, f, indent=2)
 
-@run_async
-def add_filter(update: Update, context: CallbackContext):
+# ---------- Admin commands ----------
+async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
+    msg = update.effective_message
 
-    if not context.args or len(context.args) < 1:
-        update.message.reply_text("Usage: /addfilter <word or phrase>")
+    member = await chat.get_member(user.id)
+    if member.status not in ("administrator", "creator"):
+        await msg.reply_text("❌ You need to be an admin to add filters.")
         return
 
-    # Only admin can add
-    member = chat.get_member(user.id)
-    if member.status not in ["administrator", "creator"]:
-        update.message.reply_text("Only admins can add filters!")
+    if len(context.args) < 2:
+        await msg.reply_text('Usage: /filter <trigger> <reply>. For multi-word triggers, quote them.')
         return
 
-    keyword = " ".join(context.args).lower()
-    FILTERS.setdefault(str(chat.id), [])
-    if keyword in FILTERS[str(chat.id)]:
-        update.message.reply_text("This filter already exists!")
-        return
-
-    FILTERS[str(chat.id)].append(keyword)
+    trigger = context.args[0].lower()
+    reply = " ".join(context.args[1:])
+    FILTERS.setdefault(str(chat.id), {})[trigger] = reply
     save_filters()
-    update.message.reply_text(f"✅ Filter added: {keyword}")
+    await msg.reply_text(f"✅ Filter added: '{trigger}' → '{reply}'")
 
-@run_async
-def remove_filter(update: Update, context: CallbackContext):
-    chat = update.effective_chat
-    user = update.effective_user
-
-    if not context.args or len(context.args) < 1:
-        update.message.reply_text("Usage: /removefilter <word or phrase>")
-        return
-
-    member = chat.get_member(user.id)
-    if member.status not in ["administrator", "creator"]:
-        update.message.reply_text("Only admins can remove filters!")
-        return
-
-    keyword = " ".join(context.args).lower()
-    if str(chat.id) in FILTERS and keyword in FILTERS[str(chat.id)]:
-        FILTERS[str(chat.id)].remove(keyword)
-        save_filters()
-        update.message.reply_text(f"✅ Filter removed: {keyword}")
-    else:
-        update.message.reply_text("That filter does not exist!")
-
-@run_async
-def list_filters(update: Update, context: CallbackContext):
-    chat = update.effective_chat
-    filters_list = FILTERS.get(str(chat.id), [])
+async def list_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
+    filters_list = FILTERS.get(chat_id, {})
     if not filters_list:
-        update.message.reply_text("No filters are set for this group.")
-        return
-    message = "**Filters for this group:**\n"
-    message += "\n".join([f"• {f}" for f in filters_list])
-    update.message.reply_text(message)
-
-@run_async
-def check_filters(update: Update, context: CallbackContext):
-    chat = update.effective_chat
-    msg_text = update.effective_message.text
-    if not msg_text:
+        await update.effective_message.reply_text("No filters set for this chat.")
         return
 
-    chat_filters = FILTERS.get(str(chat.id), [])
-    for keyword in chat_filters:
-        if keyword.lower() in msg_text.lower():
-            try:
-                update.effective_message.delete()
-            except:
-                pass
-            return
+    text = "📜 <b>Chat Filters:</b>\n\n"
+    for trig, rep in filters_list.items():
+        text += f"• <b>{trig}</b> → {rep}\n"
+    await update.effective_message.reply_text(text, parse_mode="HTML")
 
+async def stop_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    member = await update.effective_chat.get_member(user.id)
+    if member.status not in ("administrator", "creator"):
+        await update.effective_message.reply_text("❌ You need to be an admin to remove filters.")
+        return
+
+    if not context.args:
+        await update.effective_message.reply_text("Usage: /stop <trigger>")
+        return
+
+    trigger = context.args[0].lower()
+    if chat_id in FILTERS and trigger in FILTERS[chat_id]:
+        FILTERS[chat_id].pop(trigger)
+        save_filters()
+        await update.effective_message.reply_text(f"✅ Filter '{trigger}' removed.")
+    else:
+        await update.effective_message.reply_text("❌ This filter does not exist.")
+
+async def stop_all_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    member = await update.effective_chat.get_member(user.id)
+    if member.status not in ("administrator", "creator"):
+        await update.effective_message.reply_text("❌ You need to be an admin to remove all filters.")
+        return
+
+    FILTERS[chat_id] = {}
+    save_filters()
+    await update.effective_message.reply_text("✅ All filters removed for this chat.")
+
+
+# ---------- Message handler ----------
+async def check_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
+    text = update.effective_message.text
+    if not text or chat_id not in FILTERS:
+        return
+
+    text_lower = text.lower()
+    for trigger, reply in FILTERS[chat_id].items():
+        if trigger in text_lower:
+            await update.effective_message.reply_text(reply)
+            break  # reply only once per message
+
+
+# ---------- Register handlers ----------
 def setup(app):
-    app.add_handler(CommandHandler("addfilter", add_filter, pass_args=True))
-    app.add_handler(CommandHandler("removefilter", remove_filter, pass_args=True))
+    app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("filters", list_filters))
-    app.add_handler(MessageHandler(Filters.text & ~Filters.command, check_filters))
+    app.add_handler(CommandHandler("stop", stop_filter))
+    app.add_handler(CommandHandler("stopall", stop_all_filters))
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), check_filters))
 
+
+# ---------- Help text ----------
 __help__ = """
-**Filters Module**
-- /addfilter <word/phrase> — Block a specific word or phrase
-- /removefilter <word/phrase> — Remove a filter
-- /filters — List all active filters
+Filters Module: Make your chat more lively!  
+The bot will reply automatically to certain words.
+
+Commands:
+- /filter <trigger> <reply> — Bot replies with <reply> when someone says <trigger>.
+- /filters — List all chat filters.
+- /stop <trigger> — Remove a filter.
+- /stopall — Remove ALL filters for this chat.
 """
 
 __mod_name__ = "Filters"

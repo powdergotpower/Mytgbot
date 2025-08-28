@@ -1,74 +1,78 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 
-# --- Help Texts ---
+# --- HELP TEXTS ---
+
 HOME_TEXT = """
-<b>👋 Hello, Welcome!</b>
+<b>👋 Hello, welcome to MaxBot!</b>
 
-I am <b>Max</b> — your smart group management assistant.  
-I help you manage groups easily, keep things clean, and make your community safe.  
-
-⚡ Built in India 🇮🇳 with love ❤️  
-🔗 Owner: <a href="https://t.me/s1dh77">Ansh</a>  
-
-Use the buttons below to explore everything I can do for you.
+I'm here to make managing your groups easier.  
+Choose a section below to learn about my features:
 """
 
 ADMIN_TEXT = """
-<b>🛡 Admin Tools</b>
+<b>🔐 Admin Commands</b>
 
-Make it easy to manage your group admins!
+These tools help admins manage the group effectively:
 
-<b>Commands:</b>
-- /adminlist → List all admins in the chat
-- /pin → Pin a replied message (silent by default)
-- /unpin → Unpin the current pinned message
-- /invitelink → Get the group’s invite link
-- /promote → Promote a replied user
-- /demote → Demote a replied user
-
-✨ Stay in control of your community!
+- /promote <reply>: Promote a user to admin
+- /demote <reply>: Demote an admin
+- /pin <reply>: Pin a message
+- /unpin: Unpin the last pinned message
 """
 
-UTILS_TEXT = """
-<b>⚙️ Utility Tools</b>
+ANTIFLOOD_TEXT = """
+<b>🚫 AntiFlood System</b>
 
-Simple tools that make your life easier.
+You know how sometimes people join, send 100 messages, and ruin your chat?  
+With <b>AntiFlood</b>, that happens no more!  
+This system helps control spammers by muting, banning, or kicking them when they flood messages.
 
-<b>Commands:</b>
-- /alive → Check if I’m alive
-- /id → Get your Telegram ID
+<b>📌 Available Commands:</b>
+- <code>/flood</code> → Show the current antiflood settings.
+- <code>/setflood &lt;number/off/no&gt;</code> → Set the number of consecutive messages to trigger antiflood.  
+   • Example: <code>/setflood 7</code> → Triggers antiflood after 7 messages.  
+   • Example: <code>/setflood off</code> → Disable antiflood.
 
-🚀 More coming soon!
+- <code>/setfloodtimer &lt;count&gt; &lt;duration&gt;</code> → Timed antiflood. Triggers if a user sends X messages in Y seconds.  
+   • Example: <code>/setfloodtimer 10 30s</code> → Triggers after 10 messages in 30 seconds.  
+   • Example: <code>/setfloodtimer off</code> → Disable timed antiflood.
+
+- <code>/floodmode &lt;action&gt;</code> → Choose action for flooders: ban / mute / kick / tban / tmute.  
+   • Example: <code>/floodmode mute</code> → Mutes spammers.  
+   • Example: <code>/floodmode tban 3d</code> → Temporary ban for 3 days.
+
+- <code>/clearflood &lt;yes/no&gt;</code> → Delete the spam messages that triggered antiflood.  
+   • Example: <code>/clearflood yes</code> → Auto delete flood messages.
+
+<b>✨ Tip:</b> With antiflood, your group will stay spam-free and peaceful.
 """
 
 ABOUT_TEXT = """
-<b>ℹ️ About Max Bot</b>
+<b>ℹ️ About MaxBot</b>
 
-🤖 Smart, fast and secure group manager.  
-⚡ Designed to protect, manage, and power up your community.  
-
-💡 Version: 1.0  
-👤 Developer: <a href="https://t.me/YourUsername">Max</a>  
-❤️ Built with love and passion.
+👤 Developer: <a href="tg://user?id=123456789">Max</a>  
+💡 Built with love to help manage your groups.  
+Feel free to try all the commands and explore the features!
 """
 
-# --- Keyboards ---
+# --- KEYBOARDS ---
+
 def home_kb():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡 Admin", callback_data="help:admin")],
-        [InlineKeyboardButton("⚙️ Utils", callback_data="help:utils")],
+        [InlineKeyboardButton("🔐 Admin", callback_data="help:admin")],
+        [InlineKeyboardButton("🚫 AntiFlood", callback_data="help:antiflood")],
         [InlineKeyboardButton("ℹ️ About", callback_data="help:about")],
-        [InlineKeyboardButton("❌ Close", callback_data="help:close")],
+        [InlineKeyboardButton("❌ Close", callback_data="help:close")]
     ])
 
 def back_kb():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="help:home")],
-        [InlineKeyboardButton("❌ Close", callback_data="help:close")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="help:home")]
     ])
 
-# --- Commands ---
+# --- HANDLERS ---
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         HOME_TEXT,
@@ -78,22 +82,22 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
     data = q.data
+    await q.answer()
 
     if data == "help:home":
         await q.edit_message_text(HOME_TEXT, parse_mode="HTML", reply_markup=home_kb())
     elif data == "help:admin":
         await q.edit_message_text(ADMIN_TEXT, parse_mode="HTML", reply_markup=back_kb())
-    elif data == "help:utils":
-        await q.edit_message_text(UTILS_TEXT, parse_mode="HTML", reply_markup=back_kb())
+    elif data == "help:antiflood":
+        await q.edit_message_text(ANTIFLOOD_TEXT, parse_mode="HTML", reply_markup=back_kb())
     elif data == "help:about":
         await q.edit_message_text(ABOUT_TEXT, parse_mode="HTML", reply_markup=back_kb())
     elif data == "help:close":
         try:
             await q.message.delete()
         except Exception:
-            await q.edit_message_text("❌ Closed. Open again with /help", parse_mode="HTML")
+            await q.edit_message_text("Closed. Open again with /help", parse_mode="HTML")
 
 def setup(app):
     app.add_handler(CommandHandler("help", help_command))

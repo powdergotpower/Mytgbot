@@ -1,39 +1,48 @@
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext, run_async
-from telegram.error import BadRequest
+from telegram.ext import CommandHandler, ContextTypes, filters, MessageHandler
+from tg_bot import dispatcher
 
-@run_async
-def clean_messages(update: Update, context: CallbackContext):
+# Function to delete last X messages
+async def clean_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
+    msg = update.effective_message
 
-    # Check if user is admin
-    member = chat.get_member(user.id)
-    if member.status not in ["administrator", "creator"]:
-        update.message.reply_text("Only admins can clean messages!")
+    # Only admins can clean messages
+    member = await chat.get_member(user.id)
+    if not (member.status in ["administrator", "creator"]):
+        await msg.reply_text("Only admins can use this command!")
         return
 
     args = context.args
-    count = 10  # default delete 10 messages
-    if args and args[0].isdigit():
-        count = int(args[0])
+    if not args or not args[0].isdigit():
+        await msg.reply_text("Usage: /clean <number of messages>")
+        return
+
+    count = int(args[0])
+    if count <= 0:
+        await msg.reply_text("Please provide a number greater than 0.")
+        return
 
     deleted = 0
-    for msg in reversed(list(context.bot.get_chat(chat.id).get_history(limit=count))):
+    async for message in chat.get_history(limit=count + 1):
         try:
-            msg.delete()
+            await message.delete()
             deleted += 1
-        except BadRequest:
+        except:
             continue
 
-    update.message.reply_text(f"✅ Cleaned {deleted} messages!", quote=False)
+    await msg.reply_text(f"✅ Deleted {deleted} messages.", quote=False)
 
 def setup(app):
-    app.add_handler(CommandHandler("clean", clean_messages, pass_args=True))
-
-__help__ = """
-**Clean Module**
-- /clean <number> — Delete last <number> messages (default 10). Admins only.
-"""
+    app.add_handler(CommandHandler("clean", clean_messages, filters=filters.ChatType.GROUPS, block=False))
 
 __mod_name__ = "Clean"
+__help__ = """
+Clean module - remove unwanted messages easily.
+
+Admin commands:
+- /clean <number> : Delete the last <number> messages in the group. Only admins can use this.
+"""
+
+setup(dispatcher)

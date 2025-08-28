@@ -9,7 +9,7 @@ I am <b>Max</b> — your smart group management assistant.
 I help you manage groups easily, keep things clean, and make your community safe.  
 
 ⚡ Built in India 🇮🇳 with love ❤️  
-🔗 Owner: <a href="https://t.me/YourUsername">Max</a>  
+🔗 Owner: <a href="https://t.me/s1dh77">Ansh</a>  
 
 Use the buttons below to explore everything I can do for you.
 """

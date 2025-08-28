@@ -3,16 +3,18 @@ import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes, filters
 
-CAPTCHA_WAIT = 60  # Time in seconds to solve captcha
+# --- CONFIG ---
+CAPTCHA_WAIT = 60  # seconds to solve captcha
 
-# Keep track of users who need verification
+# Track users who need verification
 pending_captcha = {}
 
 WELCOME_TEXT = "👋 Hello {name}!\nPlease solve this captcha to continue in the group."
 
 
+# --- COMMANDS ---
 async def captcha_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Manual /captcha command (for testing)"""
+    """Manual /captcha command for testing"""
     user = update.effective_user
     chat = update.effective_chat
 
@@ -43,7 +45,7 @@ async def captcha_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def captcha_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle button clicks"""
+    """Handle captcha button clicks"""
     query = update.callback_query
     user = query.from_user
 
@@ -55,12 +57,14 @@ async def captcha_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("You are not pending verification or already verified!", show_alert=True)
         return
 
-    # correct answer
+    # Correct answer
     del pending_captcha[user.id]
     await query.answer("✅ Captcha solved!")
     await query.edit_message_text(f"✅ {user.first_name} verified and allowed in the group!")
 
 
+# --- SETUP ---
 def setup(app):
-    app.add_handler(CommandHandler("captcha", captcha_command, filters=filters.Group))
+    # Only allow /captcha in groups
+    app.add_handler(CommandHandler("captcha", captcha_command, filters=filters.ChatType.GROUPS))
     app.add_handler(CallbackQueryHandler(captcha_callback, pattern=r"^captcha:"))
